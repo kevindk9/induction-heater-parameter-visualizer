@@ -1,0 +1,136 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "defa6bcd-4142-4ed8-8acd-8d520676c74d",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "af37f42040404bc982cacf31ab391e4e",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30000, description='Frequency (Hz)', max=60000, min=15000, step=1000), F…"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/plain": [
+       "<function __main__.update_plot(frequency, capacitance, inductance, turn_ratio, r_load, r_primary)>"
+      ]
+     },
+     "execution_count": 8,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "import plotly.graph_objs as go\n",
+    "import plotly.offline as pyo\n",
+    "from ipywidgets import interact, FloatSlider, IntSlider\n",
+    "\n",
+    "\n",
+    "\n",
+    "# Define the function to calculate the values\n",
+    "def calculate(frequency, capacitance, inductance, turn_ratio, r_load, r_primary):\n",
+    "    C = capacitance * 1e-6  # convert µF to F\n",
+    "    L = inductance * 1e-6  # convert µH to H\n",
+    "    f = frequency\n",
+    "    N = turn_ratio\n",
+    "\n",
+    "    X_L = 2 * np.pi * f * L  # Inductive reactance in Ohms\n",
+    "    X_C = 1 / (2 * np.pi * f * C)  # Capacitive reactance in Ohms\n",
+    "    Z_tank = np.sqrt((X_L - X_C)**2 + r_load**2)  # Impedance of the tank circuit in Ohms\n",
+    "    V_input = 340  # Input voltage in V (RMS)\n",
+    "    V_s = V_input / N  # Secondary voltage in V (RMS)\n",
+    "\n",
+    "    # Calculate Q factor using the series resistance of the load\n",
+    "    Q = (2 * np.pi * f * L) / r_load if r_load != 0 else np.inf\n",
+    "\n",
+    "    # Voltage magnification factor at the secondary side\n",
+    "    V_tank_RMS = Q * V_s  # Voltage magnification in the tank circuit (RMS)\n",
+    "\n",
+    "    # Calculate the tank current\n",
+    "    I_tank_RMS = V_tank_RMS / Z_tank  # Tank current in A (RMS)\n",
+    "\n",
+    "    return L * 1e6, C * 1e6, X_L, V_s, Q, r_load, V_tank_RMS, I_tank_RMS  # µH, µF, Ohms, V, dimensionless, Ohms, V, A\n",
+    "\n",
+    "# Define the update function for the interactive plot\n",
+    "def update_plot(frequency, capacitance, inductance, turn_ratio, r_load, r_primary):\n",
+    "    L, C, X_L, V_s, Q, R_load, V_tank_RMS, I_tank_RMS = calculate(frequency, capacitance, inductance, turn_ratio, r_load, r_primary)\n",
+    "\n",
+    "    # Create a DataFrame for plotting\n",
+    "    data = {\n",
+    "        'Parameter': ['Inductance (µH)', 'Capacitance (µF)', 'Inductive Reactance (Ω)', 'Secondary Voltage (RMS) (V)', 'Q Factor', 'Load Resistance (Ω)', 'Tank Voltage (RMS) (V)', 'Tank Current (RMS) (A)'],\n",
+    "        'Value': [L, C, X_L, V_s, Q, R_load, V_tank_RMS, I_tank_RMS]\n",
+    "    }\n",
+    "    df = pd.DataFrame(data)\n",
+    "\n",
+    "    # Create the plot\n",
+    "    fig = go.Figure(data=[\n",
+    "        go.Bar(name='Value', x=df['Parameter'], y=df['Value'], text=df['Value'], textposition='auto')\n",
+    "    ])\n",
+    "    fig.update_layout(title='Induction Heater Parameters', yaxis_title='Value', xaxis_title='Parameter')\n",
+    "\n",
+    "    fig.show()\n",
+    "\n",
+    "# Create the sliders\n",
+    "frequency_slider = IntSlider(min=15000, max=60000, step=1000, value=30000, description='Frequency (Hz)')\n",
+    "capacitance_slider = FloatSlider(min=0.5, max=20, step=0.5, value=10, description='Capacitance (µF)')\n",
+    "inductance_slider = FloatSlider(min=1, max=20, step=0.5, value=3, description='Inductance (µH)')\n",
+    "turn_ratio_slider = IntSlider(min=4, max=20, step=1, value=10, description='Turns Ratio')\n",
+    "r_load_slider = FloatSlider(min=0.01, max=1, step=0.01, value=0.09, description='Tank ESR (Ω)')\n",
+    "r_primary_slider = FloatSlider(min=0.001, max=0.01, step=0.001, value=0.001, description='Primary Resistance (Ω)')\n",
+    "\n",
+    "# Create the interactive plot\n",
+    "interact(update_plot, frequency=frequency_slider, capacitance=capacitance_slider, inductance=inductance_slider, turn_ratio=turn_ratio_slider, r_load=r_load_slider, r_primary=r_primary_slider)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "bf97bbb7-317b-47cb-b8cc-a007f8ddd004",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "eee82456-644f-4b11-9a54-849f24b7f618",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.11.7"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
